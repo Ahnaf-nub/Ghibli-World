@@ -35,7 +35,4 @@ data/                JSON fallback data for characters/movies
 ## 📡 Data & APIs
 
 - Primary film data from [Studio Ghibli API](https://ghibliapi.vercel.app/)
-- Local fallbacks ensure recent titles like *The Boy and the Heron* always appear
 - Quotes and mood mappings are handcrafted within the app
-
-Enjoy wandering the skies! 🌥️
