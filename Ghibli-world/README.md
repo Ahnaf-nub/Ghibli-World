@@ -1,6 +1,6 @@
 # Ghibli World
 
-Studio Ghibli-inspired microsite built with **FastAPI** and vanilla frontend tech. Explore a curated film world, take a personality quiz, and ask the spirits for a movie night recommendation.
+Studio Ghibli inspired microsite built with **FastAPI** and vanilla frontend tech. Explore a curated film world, take a personality quiz, and ask the spirits for a movie night recommendation.
 
 ## ✨ Features
 
