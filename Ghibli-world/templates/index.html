@@ -136,7 +136,27 @@
         const res = await fetch('/api/movies');
         const films = await res.json();
         if(Array.isArray(films) && films.length){
-          const pick = films[Math.floor(Math.random()*films.length)];
+          const today = new Date().toISOString().slice(0,10);
+          let storedPick = null;
+          try{
+            storedPick = JSON.parse(localStorage.getItem('skyPick') || 'null');
+          }catch(e){ storedPick = null; }
+          let pick = null;
+          if(storedPick && storedPick.date === today){
+            pick = films.find(f => {
+              const key = (f.id && String(f.id).trim().toLowerCase()) || (f.title && String(f.title).trim().toLowerCase());
+              return key && key === storedPick.key;
+            }) || null;
+          }
+          if(!pick){
+            pick = films[Math.floor(Math.random()*films.length)];
+            const key = (pick.id && String(pick.id).trim().toLowerCase()) || (pick.title && String(pick.title).trim().toLowerCase()) || null;
+            if(key){
+              try{
+                localStorage.setItem('skyPick', JSON.stringify({date: today, key}));
+              }catch(e){}
+            }
+          }
           const heroImg = document.getElementById('heroImg');
           const heroTitle = document.getElementById('heroTitle');
           const heroMeta = document.getElementById('heroMeta');

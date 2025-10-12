@@ -1,10 +1,12 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 import time
 from typing import Dict, Any, List, Set
+from collections import Counter
+from urllib.parse import quote, urlparse
 
 import httpx
 
@@ -24,6 +26,79 @@ GHIBLI_WHISPERS = [
     {"quote": "Always believe in yourself. Do this and no matter where you are, you will have nothing to fear.", "source": "The Cat Returns"},
 ]
 
+QUIZ_ARCHETYPES: Dict[str, Dict[str, Any]] = {
+    "calm": {
+        "name": "Forest Guardian",
+        "film": "My Neighbor Totoro",
+        "quote": "Trees and people used to be good friends.",
+        "recommended": [
+            "When Marnie Was There",
+            "Only Yesterday",
+            "Spirited Away",
+        ],
+    },
+    "curious": {
+        "name": "Sky Courier",
+        "film": "Kiki's Delivery Service",
+        "quote": "We each need to find our own inspiration.",
+        "recommended": [
+            "Whisper of the Heart",
+            "Castle in the Sky",
+            "Arrietty",
+        ],
+    },
+    "romantic": {
+        "name": "Heart of Howl",
+        "film": "Howl's Moving Castle",
+        "quote": "A heart's a heavy burden.",
+        "recommended": [
+            "The Wind Rises",
+            "From Up on Poppy Hill",
+            "Ponyo",
+        ],
+    },
+    "mysterious": {
+        "name": "Bathhouse Dreamer",
+        "film": "Spirited Away",
+        "quote": "Once you've met someone you never really forget them.",
+        "recommended": [
+            "Princess Mononoke",
+            "Ponyo",
+            "Castle in the Sky",
+        ],
+    },
+    "kind": {
+        "name": "Whispering Artisan",
+        "film": "Whisper of the Heart",
+        "quote": "You have to write the story you want to read.",
+        "recommended": [
+            "The Cat Returns",
+            "Only Yesterday",
+            "When Marnie Was There",
+        ],
+    },
+    "brave": {
+        "name": "Spirit Warrior",
+        "film": "Princess Mononoke",
+        "quote": "The forest is not a place for men.",
+        "recommended": [
+            "Nausicaä of the Valley of the Wind",
+            "Princess Mononoke",
+            "The Boy and the Heron",
+        ],
+    },
+    "determined": {
+        "name": "Valley Pathfinder",
+        "film": "Nausicaä of the Valley of the Wind",
+        "quote": "You mustn't ever let anyone steal your dreams.",
+        "recommended": [
+            "Princess Mononoke",
+            "Castle in the Sky",
+            "The Boy and the Heron",
+        ],
+    },
+}
+
 FALLBACK_FILMS: List[Dict[str, Any]] = [
     {
         "id": "the-boy-and-the-heron-2023",
@@ -41,6 +116,9 @@ FALLBACK_FILMS: List[Dict[str, Any]] = [
 
 _MOVIES_CACHE: Dict[str, Any] = {"data": None, "at": 0.0}
 _CACHE_TTL_SECONDS = 60 * 10  # 10 min
+_IMAGE_PROXY_CACHE: Dict[str, Dict[str, Any]] = {}
+_IMAGE_PROXY_TTL = 60 * 60  # 1 hour
+_IMAGE_PROXY_MAX_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
 def _to_int(value: Any) -> int | None:
@@ -174,15 +252,125 @@ async def fetch_ghibli_films() -> List[Dict[str, Any]]:
             "description": desc,
             "image": image,
             "poster": poster,
-            "running_time": f.get("running_time") or f.get("runningTime"),
-            "rt_score": f.get("rt_score") or f.get("rtScore"),
-            "movie_banner": f.get("movie_banner"),
         }
 
     films = [to_simple(f) for f in films_raw]
 
     _MOVIES_CACHE.update({"data": films, "at": now})
     return films
+
+
+def _dominant_trait(answers: List[str]) -> str:
+    filtered = [a for a in answers if isinstance(a, str) and a]
+    if not filtered:
+        return "curious"
+    counts = Counter(filtered)
+    winner, _ = max(
+        counts.items(),
+        key=lambda item: (item[1], -filtered.index(item[0]))
+    )
+    return winner if winner in QUIZ_ARCHETYPES else "curious"
+
+
+def _normalize_title(value: str) -> str:
+    return "".join(ch for ch in value.lower() if ch.isalnum())
+
+
+def _to_proxy_url(url: str | None) -> str | None:
+    if not url:
+        return None
+    return f"/proxy/image?url={quote(url, safe='')}"
+
+
+def _build_recommendations(
+    films: List[Dict[str, Any]],
+    titles: List[str],
+    skip_title: str,
+) -> List[Dict[str, Any]]:
+    items: List[Dict[str, Any]] = []
+    seen: Set[str] = set()
+    skip_key = skip_title.strip().lower()
+    skip_norm = _normalize_title(skip_title) if skip_title else ""
+
+    catalog: Dict[str, Dict[str, Any]] = {}
+    for f in films:
+        title = str(f.get("title") or "").strip()
+        if not title:
+            continue
+        catalog[title.lower()] = f
+        norm = _normalize_title(title)
+        if norm:
+            catalog.setdefault(norm, f)
+    for raw_title in titles:
+        title = (raw_title or "").strip()
+        if not title:
+            continue
+        key = title.lower()
+        norm = _normalize_title(title)
+        if key in seen or key == skip_key or norm == skip_norm:
+            continue
+        match = catalog.get(key) or catalog.get(norm)
+        if match:
+            raw_image = (
+                match.get("image")
+                or match.get("poster")
+                or match.get("movie_banner")
+            )
+            items.append(
+                {
+                    "title": match.get("title"),
+                    "year": match.get("year"),
+                    "director": match.get("director"),
+                    "image": _to_proxy_url(raw_image),
+                }
+            )
+        else:
+            items.append({"title": title})
+        seen.add(key)
+        if norm:
+            seen.add(norm)
+    return items
+
+
+async def _fetch_image_proxy(url: str) -> Dict[str, Any]:
+    now = time.time()
+    cached = _IMAGE_PROXY_CACHE.get(url)
+    if cached and (now - cached["at"]) < _IMAGE_PROXY_TTL:
+        return cached
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(url)
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail="failed to fetch image")
+
+    content = resp.content
+    if len(content) > _IMAGE_PROXY_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="image too large")
+
+    content_type = resp.headers.get("content-type") or "application/octet-stream"
+    record = {
+        "content": content,
+        "content_type": content_type.split(";")[0],
+        "at": now,
+    }
+    _IMAGE_PROXY_CACHE[url] = record
+    return record
+
+
+@app.get("/proxy/image")
+async def proxy_image(url: str):
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise HTTPException(status_code=400, detail="invalid image url")
+
+    try:
+        payload = await _fetch_image_proxy(url)
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=502, detail="image proxy failure") from exc
+
+    return Response(content=payload["content"], media_type=payload["content_type"])
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -210,6 +398,53 @@ async def oracle_page(request: Request):
 async def api_movies():
     films = await fetch_ghibli_films()
     return JSONResponse(content=films)
+
+
+@app.post("/api/quiz")
+async def api_quiz(payload: Dict[str, Any]):
+    answers = payload.get("answers")
+    if not isinstance(answers, list):
+        raise HTTPException(status_code=400, detail="answers must be a list")
+    parsed = [str(a).strip() for a in answers if isinstance(a, str) and str(a).strip()]
+    if not parsed:
+        raise HTTPException(status_code=400, detail="no answers provided")
+
+    trait = _dominant_trait(parsed)
+    profile = QUIZ_ARCHETYPES.get(trait) or QUIZ_ARCHETYPES["curious"]
+    films = await fetch_ghibli_films()
+
+    film_match = next(
+        (
+            f
+            for f in films
+            if str(f.get("title") or "").strip().lower()
+            == profile["film"].strip().lower()
+        ),
+        None,
+    )
+    film_image_raw = profile.get("film_image")
+    if not film_image_raw and film_match:
+        film_image_raw = (
+            film_match.get("image")
+            or film_match.get("poster")
+            or film_match.get("movie_banner")
+        )
+
+    film_image = _to_proxy_url(film_image_raw)
+    avatar_image = _to_proxy_url(profile.get("image")) or film_image
+
+    recs = _build_recommendations(films, profile.get("recommended", []), profile["film"])
+
+    response = {
+        "type": trait,
+        "name": profile.get("name"),
+        "film": profile.get("film"),
+        "quote": profile.get("quote"),
+        "image": avatar_image,
+        "film_image": film_image,
+        "recommended": recs,
+    }
+    return JSONResponse(content=response)
 
 
 @app.get("/healthz")

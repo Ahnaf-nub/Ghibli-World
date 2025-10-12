@@ -56,33 +56,48 @@ document.addEventListener("DOMContentLoaded", () => {
   pTotal.textContent = total;
 
   let step = 0;
-  let answers = [];
+  const answers = Array.from({ length: total }, () => null);
   let selected = null;
+  let latestResult = null;
+
+  shareBtn.disabled = true;
+
+  function setSelected(value) {
+    selected = value;
+    answers[step] = value;
+    Array.from(choices.children).forEach(btn => {
+      btn.classList.toggle('is-selected', btn.dataset.value === value);
+    });
+    nextBtn.disabled = selected == null;
+  }
 
   function renderStep() {
     const data = QUESTIONS[step];
     pNow.textContent = String(step + 1);
     qText.textContent = data.q;
-    backBtn.style.display = step > 0 ? 'inline-block' : 'none';
+    backBtn.style.display = step > 0 ? 'inline-flex' : 'none';
     nextBtn.textContent = step === total - 1 ? 'See my result' : 'Next';
     choices.innerHTML = '';
-    selected = null;
-    data.opts.forEach((o, idx) => {
+    selected = answers[step];
+    data.opts.forEach((o) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'button';
-      btn.style.margin = '6px 8px 6px 0';
+      btn.className = 'button choice-button';
+      btn.dataset.value = o.val;
       btn.textContent = o.label;
-      btn.addEventListener('click', () => {
-        selected = o.val;
-        Array.from(choices.children).forEach(c => c.style.outline = 'none');
-        btn.style.outline = '3px solid var(--accent-2)';
-      });
+      btn.addEventListener('click', () => setSelected(o.val));
+      if (selected === o.val) {
+        btn.classList.add('is-selected');
+      }
       choices.appendChild(btn);
     });
+    nextBtn.disabled = selected == null;
   }
 
   async function submitAnswers() {
+    if (answers.some(value => value == null)) {
+      return;
+    }
     try {
       const res = await fetch('/api/quiz', {
         method: 'POST',
@@ -93,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       showResult(data);
     } catch (err) {
-      resultInner.innerHTML = '<p>something went wrong. Try again later.</p>';
+      resultInner.innerHTML = '<p>Something went wrong. Try again later.</p>';
       resultCard.style.display = 'block';
       console.error(err);
     }
@@ -128,54 +143,8 @@ document.addEventListener("DOMContentLoaded", () => {
     tick();
   }
 
-  function showResult(data) {
-    quizCard.style.display = 'none';
-    const imgSrc = data.image || data.film_image || '';
-    resultInner.innerHTML = `
-      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-        ${imgSrc ? `<img src="${imgSrc}" alt="${data.name}" style="width:140px;height:140px;object-fit:cover;border-radius:12px">` : ''}
-        <div>
-          <h3 style="margin:0">${data.name || 'Your Ghibli Match'}</h3>
-          <small style="color:var(--muted)">${data.film || ''}</small>
-          ${data.quote ? `<p style="margin:10px 0 0">“${data.quote}”</p>` : ''}
-        </div>
-      </div>
-    `;
-
-    if (Array.isArray(data.recommended) && data.recommended.length){
-      recEl.innerHTML = '<h4 style="margin:0 0 8px">You might also like</h4>' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">' +
-        data.recommended.map(r => `
-          <div class="card" style="padding:0;overflow:hidden">
-            ${r.image ? `<img src="${r.image}" alt="${r.title}" style="width:100%;height:120px;object-fit:cover">` : ''}
-            <div style="padding:10px">
-              <div style="font-weight:700">${r.title}</div>
-              <small style="color:var(--muted)">${r.year || ''} ${r.director ? '• '+r.director : ''}</small>
-            </div>
-          </div>
-        `).join('') +
-        '</div>';
-    } else {
-      recEl.innerHTML = '';
-    }
-
-    resultCard.style.display = 'block';
-    boomConfetti();
-
-    shareBtn?.addEventListener('click', () => {
-      const text = `I got ${data.name} (${data.film}) on Ghibli World!`;
-      if (navigator.share) {
-        navigator.share({ text }).catch(()=>{});
-      } else {
-        navigator.clipboard.writeText(text);
-        alert('Result copied to clipboard!');
-      }
-    });
-  }
-
   nextBtn.addEventListener('click', () => {
     if (selected == null) return; // require a pick
-    answers.push(selected);
     if (step === total - 1) {
       submitAnswers();
       return;
@@ -187,7 +156,6 @@ document.addEventListener("DOMContentLoaded", () => {
   backBtn.addEventListener('click', () => {
     if (step === 0) return;
     step--;
-    answers.pop();
     renderStep();
   });
 
@@ -195,10 +163,164 @@ document.addEventListener("DOMContentLoaded", () => {
     resultCard.style.display = 'none';
     quizCard.style.display = 'block';
     step = 0;
-    answers = [];
+    answers.fill(null);
+    latestResult = null;
+    shareBtn.disabled = true;
+    shareBtn.textContent = 'Download keepsake';
     renderStep();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+
+  async function waitForImages(container) {
+    const imgs = Array.from(container.querySelectorAll('img'))
+      .filter(img => !img.complete || img.naturalWidth === 0);
+    if (!imgs.length) return;
+    await Promise.all(imgs.map(img => new Promise(resolve => {
+      const done = () => {
+        img.removeEventListener('load', done);
+        img.removeEventListener('error', done);
+        resolve();
+      };
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    })));
+  }
+
+  shareBtn.addEventListener('click', async (event) => {
+    event.preventDefault();
+    if (!latestResult) return;
+    if (typeof html2canvas !== 'function') {
+      alert('Image capture not supported right now.');
+      return;
+    }
+    shareBtn.disabled = true;
+    const originalText = shareBtn.textContent;
+    shareBtn.textContent = 'Preparing image…';
+    try {
+      await waitForImages(resultCard);
+      const canvas = await html2canvas(resultCard, {
+        backgroundColor: '#f0f6f9',
+        scale: Math.min(window.devicePixelRatio || 1, 2),
+        useCORS: true,
+        allowTaint: false,
+      });
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      const filename = `ghibli-world-${latestResult.type || 'result'}.png`;
+      link.download = filename;
+      link.click();
+    } catch (err) {
+      console.error('Failed to capture result', err);
+      alert('Could not create an image. Please try again.');
+    } finally {
+      shareBtn.disabled = false;
+      shareBtn.textContent = originalText;
+    }
+  });
+
+  function buildRecommendations(list) {
+    recEl.innerHTML = '';
+    if (!Array.isArray(list) || !list.length) {
+      return;
+    }
+
+    const heading = document.createElement('h4');
+    heading.className = 'result-subheading';
+    heading.textContent = 'You might also like';
+    recEl.appendChild(heading);
+
+    const grid = document.createElement('div');
+    grid.className = 'recommendation-grid';
+
+    list.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'card recommendation-card';
+
+      if (item.image) {
+        const img = document.createElement('img');
+        img.src = item.image;
+        img.alt = item.title || 'Film poster';
+        img.className = 'recommendation-image';
+        img.crossOrigin = 'anonymous';
+        img.referrerPolicy = 'no-referrer';
+        card.appendChild(img);
+      }
+
+      const body = document.createElement('div');
+      body.className = 'recommendation-body';
+
+      const title = document.createElement('div');
+      title.className = 'recommendation-title';
+      title.textContent = item.title || 'Untitled';
+      body.appendChild(title);
+
+      const metaParts = [item.year, item.director].filter(Boolean);
+      if (metaParts.length) {
+        const meta = document.createElement('small');
+        meta.className = 'recommendation-meta';
+        meta.textContent = metaParts.join(' • ');
+        body.appendChild(meta);
+      }
+
+      card.appendChild(body);
+      grid.appendChild(card);
+    });
+
+    recEl.appendChild(grid);
+  }
+
+  function showResult(data) {
+    latestResult = data;
+    quizCard.style.display = 'none';
+
+    const header = document.createElement('div');
+    header.className = 'result-header';
+
+    const avatarSrc = data.image || data.film_image;
+    if (avatarSrc) {
+      const img = document.createElement('img');
+      img.src = avatarSrc;
+      img.alt = data.name || 'Result';
+      img.className = 'result-avatar';
+      img.crossOrigin = 'anonymous';
+      img.referrerPolicy = 'no-referrer';
+      header.appendChild(img);
+    }
+
+    const textWrap = document.createElement('div');
+    textWrap.className = 'result-text';
+
+    const title = document.createElement('h3');
+    title.className = 'result-title';
+    title.textContent = data.name || 'Your Ghibli Match';
+    textWrap.appendChild(title);
+
+    if (data.film) {
+      const film = document.createElement('small');
+      film.className = 'result-film';
+      film.textContent = data.film;
+      textWrap.appendChild(film);
+    }
+
+    if (data.quote) {
+      const quote = document.createElement('p');
+      quote.className = 'result-quote';
+      quote.textContent = `“${data.quote}”`;
+      textWrap.appendChild(quote);
+    }
+
+    header.appendChild(textWrap);
+    resultInner.innerHTML = '';
+    resultInner.appendChild(header);
+
+    buildRecommendations(data.recommended);
+
+    shareBtn.textContent = 'Download keepsake';
+    shareBtn.disabled = false;
+
+    resultCard.style.display = 'block';
+    boomConfetti();
+  }
 
   renderStep();
 });

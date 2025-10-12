@@ -187,6 +187,10 @@ body::after{
 .quiz-card h4{margin:0 0 8px}
 .quiz-card label{display:block;margin:6px 0;padding:8px;border-radius:8px}
 .quiz-card input{margin-right:8px}
+.choice-button{margin:6px 8px 6px 0;min-width:180px;text-align:center;background:rgba(255,255,255,0.85);color:#2b2b2b;border:1px solid rgba(39,54,72,0.22);transition:transform .18s ease, box-shadow .18s ease}
+.choice-button:hover{transform:translateY(-2px);box-shadow:0 8px 16px rgba(20,30,50,0.12)}
+.choice-button.is-selected{outline:3px solid var(--accent-2);background:rgba(244,212,140,0.28);box-shadow:0 10px 20px rgba(39,54,72,0.18)}
+.choice-button:disabled{opacity:0.6;cursor:not-allowed}
 
 /* Interactive quiz */
 .q-text{font-size:18px}
@@ -196,6 +200,19 @@ body::after{
 .form-actions{margin-top:12px;display:flex;justify-content:space-between;gap:12px}
 
 .result-card img{max-width:140px;display:block;margin-bottom:12px}
+.result-header{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.result-avatar{width:140px;height:140px;object-fit:cover;border-radius:16px;box-shadow:0 12px 24px rgba(31,59,83,0.18)}
+.result-text{flex:1;min-width:200px}
+.result-title{margin:0;font-size:24px;font-family:'Libre Baskerville', serif;color:#1b2d3a}
+.result-film{display:block;margin-top:4px;color:var(--muted)}
+.result-quote{margin:10px 0 0;font-style:italic;color:#31414f}
+.result-subheading{margin:18px 0 8px;font-size:18px;font-family:'Libre Baskerville', serif;color:#1b2d3a}
+.recommendation-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.recommendation-card{padding:0;overflow:hidden}
+.recommendation-image{width:100%;height:120px;object-fit:cover;display:block}
+.recommendation-body{padding:10px}
+.recommendation-title{font-weight:700;color:#1f2d38;margin-bottom:4px}
+.recommendation-meta{color:var(--muted)}
 .result-actions{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
 
 .explorer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;margin-top:18px;padding-bottom:40px}
@@ -332,6 +349,7 @@ footer.site-footer{padding:18px 0;text-align:center;color:var(--muted)}
 }
 
 @media (max-width:540px) {
+  .choice-button{min-width:unset;width:100%}
   .corner-brand{display:none}
   .site-header{padding:20px 0}
   .title{font-size:24px;text-align:center}
@@ -350,6 +368,7 @@ footer.site-footer{padding:18px 0;text-align:center;color:var(--muted)}
   .form-actions .button{width:100%}
   .result-actions{flex-direction:column;gap:8px}
   .result-actions .button{width:100%;text-align:center}
+  .result-header{align-items:flex-start}
 }
 
 @media(prefers-reduced-motion:reduce){
