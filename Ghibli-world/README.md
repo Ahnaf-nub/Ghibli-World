@@ -1,7 +1,7 @@
 # Ghibli World
 
 Studio Ghibli inspired microsite built with **FastAPI** and vanilla frontend tech. Explore a curated film world, take a personality quiz, and ask the spirits for a movie night recommendation.
-
+<img width="860" height="538" alt="image" src="https://github.com/user-attachments/assets/37bc19bb-e70f-42a8-a02b-23a07fa145d4" />
 ## ✨ Features
 
 - **Ghibli World Hub** – hero spotlight, timeline, spirit statistics, and daily whisper quotes.
