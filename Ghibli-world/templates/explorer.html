@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Movie Explorer — Ghibli World</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="corner-brand" aria-hidden="true">
+    <img src="/static/images/ghibli.png" alt="" />
+  </div>
+  <header class="site-header small">
+    <div class="wrap">
+      <h1 class="title">Ghibli Movie Explorer</h1>
+  <nav class="nav"><a href="/">Home</a> <a href="/quiz">Quiz</a> <a href="/oracle">Spirit Guide</a></nav>
+    </div>
+  </header>
+
+  <main class="wrap explorer-grid" id="moviesGrid">
+    <section class="card filter-card" style="grid-column:1/-1;margin-bottom:8px">
+      <div class="filter-bar">
+        <button class="chip filter-chip is-active" data-filter="all">All</button>
+        <button class="chip filter-chip" data-filter="rt90">Critics' 90+</button>
+        <button class="chip filter-chip" data-filter="classic">Classic (&lt; 2000)</button>
+        <button class="chip filter-chip" data-filter="modern">Modern (2000+)</button>
+      </div>
+      <input id="searchInput" type="search" placeholder="Search films, years, directors…" class="search-input">
+    </section>
+  </main>
+
+  <template id="movieCardTpl">
+    <article class="movie-card">
+      <img class="movie-poster" alt="poster" />
+      <div class="movie-body">
+        <h4 class="movie-title"></h4>
+        <p class="movie-desc"></p>
+        <div class="chips movie-meta"></div>
+      </div>
+    </article>
+  </template>
+
+  <audio id="ambience" loop>
+    <source src="/static/sounds/light-rain.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    (function(){
+      const nav = document.querySelector('.nav');
+      if(!nav) return;
+      const btn = document.createElement('button');
+      btn.id = 'audioToggle';
+      btn.className = 'button';
+      btn.style.marginLeft = '8px';
+      btn.style.background = '#e6f4ff';
+      nav.appendChild(btn);
+      const audio = document.getElementById('ambience');
+      if (audio) audio.volume = 0.35;
+      const stored = localStorage.getItem('ambientOn');
+      let on = stored !== null ? stored === '1' : true; // default ON
+      btn.textContent = 'Ambient: ' + (on ? 'On' : 'Off');
+      (async () => { try { if(on){ await audio.play(); } else { audio.pause(); } } catch(e){} })();
+      const ensurePlay = async () => { if(on && audio && audio.paused){ try{ await audio.play(); }catch(e){} } };
+      document.addEventListener('pointerdown', ensurePlay, { once: true });
+      btn.addEventListener('click', async () => {
+        on = !on;
+        localStorage.setItem('ambientOn', on ? '1' : '0');
+        btn.textContent = 'Ambient: ' + (on ? 'On' : 'Off');
+        try{ if(on){ await audio.play(); } else { audio.pause(); } }catch(e){}
+      });
+    })();
+  </script>
+  <script src="/static/js/explorer.js"></script>
+</body>
+</html>

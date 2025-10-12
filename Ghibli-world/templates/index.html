@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ghibli World</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="corner-brand" aria-hidden="true">
+    <img src="/static/images/ghibli.png" alt="" />
+  </div>
+  <div class="soot-layer" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <header class="site-header">
+    <div class="wrap">
+  <h1 class="title">Ghibli World <span class="subtitle-jp">ジブリの世界</span></h1>
+  <p class="subtitle">Find your spirit, explore the films.</p>
+      <nav class="nav">
+  <a href="/quiz">Take the Quiz</a>
+  <a href="/oracle">Spirit Guide</a>
+  <a href="/explorer">Movie Explorer</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap home-grid">
+  <section class="hero-banner" style="grid-column:1/-1;margin-bottom:18px">
+      <div class="hero-scene">
+        <img id="heroImg" alt="Ghibli sky" />
+        <div class="hero-gradient"></div>
+        <div class="hero-petals" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="hero-overlay">
+        <p class="hero-eyebrow" id="heroEyebrow">Sky feature</p>
+  <h2 id="heroTitle">Ghibli World</h2>
+        <p id="heroMeta" class="hero-meta"></p>
+        <p id="heroDesc" class="hero-desc"></p>
+        <div class="hero-actions">
+          <a class="button" href="/oracle">Ask the Spirits</a>
+          <a class="button button-ghost" href="/explorer">Browse Films</a>
+        </div>
+      </div>
+    </section>
+    <section class="card intro">
+  <h2>Welcome</h2>
+  <p>Pick a path — discover which Ghibli character you are, or browse films with cozy details and gifs.</p>
+      <a class="button" href="/quiz">I'm curious →</a>
+    </section>
+
+    <section class="card stats-card" id="spiritStats">
+  <h3>Spirit Ledger</h3>
+      <div class="stats-grid">
+        <div class="stat">
+          <span class="stat-label">Films catalogued</span>
+          <span class="stat-value" data-stat="films">–</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Sky score</span>
+          <span class="stat-value" data-stat="score">–</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Total runtime</span>
+          <span class="stat-value" data-stat="runtime">–</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">First release</span>
+          <span class="stat-value" data-stat="first">–</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Latest release</span>
+          <span class="stat-value" data-stat="latest">–</span>
+        </div>
+      </div>
+      <p class="stat-note" id="statNote"></p>
+    </section>
+
+    <section class="card highlight-card">
+  <h3>Sky-Picked Feature</h3>
+      <div class="highlight" id="topFilm">
+        <img id="topFilmImg" class="highlight-image" alt="Top rated film" />
+        <div class="highlight-body">
+          <h4 id="topFilmTitle">Loading…</h4>
+          <p id="topFilmDesc"></p>
+          <div class="chips" id="topFilmMeta"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card journey-card">
+  <h3>Wandering Through Time</h3>
+      <div class="journey-grid">
+        <div class="journey-tile">
+          <span class="journey-label">Newest arrival</span>
+          <h4 id="newestTitle">—</h4>
+          <p id="newestMeta"></p>
+        </div>
+        <div class="journey-tile">
+          <span class="journey-label">Oldest legend</span>
+          <h4 id="oldestTitle">—</h4>
+          <p id="oldestMeta"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card timeline-card">
+  <h3>Release Timeline</h3>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <section class="card quote-card">
+  <h3>Today's Whisper</h3>
+      <blockquote id="whisperQuote">Let the wind bring a quote…</blockquote>
+      <cite id="whisperSource"></cite>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p><small>Made with ❤️ by Ahnaf</small></p>
+      <p><small>No AI was used in creating these images and it is strongly discouraged, for as Hayao Miyazaki once said, ‘It’s an insult to life itself.’</small></p>
+    </div>
+  </footer>
+  <audio id="ambience" loop>
+    <source src="/static/sounds/forest-breeze.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    (async function(){
+      try{
+        const res = await fetch('/api/movies');
+        const films = await res.json();
+        if(Array.isArray(films) && films.length){
+          const pick = films[Math.floor(Math.random()*films.length)];
+          const heroImg = document.getElementById('heroImg');
+          const heroTitle = document.getElementById('heroTitle');
+          const heroMeta = document.getElementById('heroMeta');
+          const heroDesc = document.getElementById('heroDesc');
+          const heroEyebrow = document.getElementById('heroEyebrow');
+          if(heroImg){
+            const source = pick.movie_banner || pick.poster || pick.image || '';
+            if(source){
+              heroImg.src = source;
+              heroImg.onerror = () => { heroImg.style.opacity = '0'; };
+            }else{
+              heroImg.style.opacity = '0';
+            }
+          }
+          if(heroTitle){ heroTitle.textContent = pick.title || 'Ghibli World'; }
+          if(heroMeta){
+            const parts = [pick.year, pick.director, pick.running_time ? `${pick.running_time} min` : null]
+              .filter(Boolean)
+              .map(String);
+            heroMeta.textContent = parts.join(' • ');
+          }
+          if(heroDesc){
+            const desc = pick.description || '';
+            heroDesc.textContent = desc.length > 180 ? `${desc.slice(0, 180)}…` : desc;
+          }
+          if(heroEyebrow){
+            const labels = ["Sky feature", "Tonight's breeze", "Moonlit spotlight", "Forest pick"];
+            heroEyebrow.textContent = labels[Math.floor(Math.random()*labels.length)];
+          }
+        }
+      }catch(e){
+        console.error('Failed to load hero film', e);
+      }
+    })();
+    (function(){
+      const nav = document.querySelector('.nav');
+      if(!nav) return;
+      const btn = document.createElement('button');
+      btn.id = 'audioToggle';
+      btn.className = 'button';
+      btn.style.marginLeft = '8px';
+      btn.style.background = '#e6f4ff';
+      nav.appendChild(btn);
+      const audio = document.getElementById('ambience');
+      if (audio) audio.volume = 0.35;
+      const stored = localStorage.getItem('ambientOn');
+      let on = stored !== null ? stored === '1' : true; // default ON
+      btn.textContent = 'Ambient: ' + (on ? 'On' : 'Off');
+      (async () => { try { if(on){ await audio.play(); } else { audio.pause(); } } catch(e){} })();
+      const ensurePlay = async () => { if(on && audio && audio.paused){ try{ await audio.play(); }catch(e){} } };
+      document.addEventListener('pointerdown', ensurePlay, { once: true });
+      btn.addEventListener('click', async () => {
+        on = !on;
+        localStorage.setItem('ambientOn', on ? '1' : '0');
+        btn.textContent = 'Ambient: ' + (on ? 'On' : 'Off');
+        try{ if(on){ await audio.play(); } else { audio.pause(); } }catch(e){}
+      });
+    })();
+    (async function(){
+      try{
+        const res = await fetch('/api/world');
+        const world = await res.json();
+        if(!world) return;
+
+        const formatRuntime = minutes => {
+          if(typeof minutes !== 'number' || Number.isNaN(minutes) || minutes <= 0) return '–';
+          const hours = Math.floor(minutes / 60);
+          const mins = minutes % 60;
+          if(hours && mins) return `${hours}h ${mins}m`;
+          if(hours) return `${hours}h`;
+          return `${mins}m`;
+        };
+
+        const statValues = {
+          films: world.counts?.films,
+          score: world.averageRtScore,
+          runtime: world.totalRuntimeMinutes,
+          first: world.firstYear,
+          latest: world.latestYear,
+        };
+
+        document.querySelectorAll('[data-stat]').forEach(el => {
+          const key = el.getAttribute('data-stat');
+          let value = statValues[key];
+          if(key === 'runtime' && typeof value === 'number'){
+            value = formatRuntime(value);
+          }
+          if(key === 'score' && value){
+            el.textContent = `${value}`;
+          }else{
+            el.textContent = value ?? '–';
+          }
+        });
+
+        const statNote = document.getElementById('statNote');
+        if(statNote){
+          const first = statValues.first ?? '—';
+          const latest = statValues.latest ?? '—';
+          const films = statValues.films ?? '–';
+          statNote.textContent = `From ${first} to ${latest}, ${films} tales drift across the Studio Ghibli sky.`;
+        }
+
+        const top = world.topRated;
+        if(top){
+          const img = document.getElementById('topFilmImg');
+          const title = document.getElementById('topFilmTitle');
+          const desc = document.getElementById('topFilmDesc');
+          const meta = document.getElementById('topFilmMeta');
+          if(img){
+            img.src = top.image || top.poster || top.movie_banner || '';
+            img.onerror = () => { img.style.display = 'none'; };
+          }
+          if(title){ title.textContent = top.title || 'Top rated film'; }
+          if(desc){ desc.textContent = top.description || ''; }
+          if(meta){
+            const chips = [];
+            if(top.year) chips.push(`<span class="chip">${top.year}</span>`);
+            if(top.director) chips.push(`<span class="chip">${top.director}</span>`);
+            if(top.rt_score) chips.push(`<span class="chip">RT ${top.rt_score}</span>`);
+            if(top.running_time) chips.push(`<span class="chip">${top.running_time} min</span>`);
+            meta.innerHTML = chips.join('');
+          }
+        }
+
+        const newest = world.newest || null;
+        const oldest = world.oldest || null;
+        const newestTitle = document.getElementById('newestTitle');
+        const newestMeta = document.getElementById('newestMeta');
+        const oldestTitle = document.getElementById('oldestTitle');
+        const oldestMeta = document.getElementById('oldestMeta');
+        if(newestTitle){ newestTitle.textContent = newest?.title || '—'; }
+        if(newestMeta){
+          const parts = [newest?.year, newest?.director].filter(Boolean);
+          newestMeta.textContent = parts.length ? parts.join(' • ') : '';
+        }
+        if(oldestTitle){ oldestTitle.textContent = oldest?.title || '—'; }
+        if(oldestMeta){
+          const parts = [oldest?.year, oldest?.director].filter(Boolean);
+          oldestMeta.textContent = parts.length ? parts.join(' • ') : '';
+        }
+
+        const timeline = Array.isArray(world.timeline) ? world.timeline : [];
+        const timelineWrap = document.getElementById('timeline');
+        if(timelineWrap){
+          timelineWrap.innerHTML = timeline.map(item => {
+            const score = item.rt_score ?? '–';
+            return `<div class="timeline-item"><span class="timeline-year">${item.year}</span><span class="timeline-title">${item.title}</span><span class="timeline-score">RT ${score}</span></div>`;
+          }).join('');
+        }
+
+        const quotes = Array.isArray(world.quotes) ? world.quotes : [];
+        if(quotes.length){
+          const pick = quotes[Math.floor(Math.random()*quotes.length)];
+          const qEl = document.getElementById('whisperQuote');
+          const sEl = document.getElementById('whisperSource');
+          const text = pick.quote || pick.text || '';
+          if(qEl && text){
+            qEl.textContent = text.startsWith('“') ? text : `“${text}”`;
+          }
+          if(sEl){
+            sEl.textContent = pick.source ? (pick.source.trim().startsWith('—') ? pick.source : `— ${pick.source}`) : '';
+          }
+        }
+      }catch(e){
+        console.error('Failed to load world snapshot', e);
+      }
+    })();
+  </script>
+</body>
+</html>

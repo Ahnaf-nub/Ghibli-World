@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz — Ghibli World</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="corner-brand" aria-hidden="true">
+    <img src="/static/images/ghibli.png" alt="" />
+  </div>
+  <header class="site-header small">
+    <div class="wrap">
+      <h1 class="title">Which Ghibli Character Are You?</h1>
+  <nav class="nav"><a href="/">Home</a> <a href="/explorer">Movie Explorer</a> <a href="/oracle">Spirit Guide</a></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card quiz-card" id="quizCard">
+      <div id="progress" style="margin-bottom:10px;color:var(--muted)">Question <span id="pNow">1</span>/<span id="pTotal">6</span></div>
+      <div id="qText" class="q-text" style="font-weight:700;margin-bottom:10px">Let’s daydream a bit… pick what feels right.</div>
+      <div id="choices" class="choices"></div>
+      <div class="form-actions">
+        <button id="backBtn" class="button" style="background:#eaeaea;color:#333;display:none">Back</button>
+        <button id="nextBtn" class="button">Next</button>
+      </div>
+      <canvas id="confetti" width="10" height="10" style="display:none;position:fixed;inset:0;pointer-events:none"></canvas>
+    </section>
+
+    <section class="card result-card" id="resultCard" style="display:none;">
+      <div id="resultInner"></div>
+      <div id="recommendations" style="margin-top:14px"></div>
+      <div class="result-actions">
+        <a class="button" href="/explorer">Explore Movies</a>
+        <a class="button" id="retryBtn" style="background:var(--accent-2)">Try again</a>
+        <a class="button" id="shareBtn" style="background:#ffd1dc">Share</a>
+      </div>
+    </section>
+  </main>
+
+  <audio id="ambience" loop>
+    <source src="/static/sounds/forest-breeze.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    (function(){
+      const nav = document.querySelector('.nav');
+      if(!nav) return;
+      const btn = document.createElement('button');
+      btn.id = 'audioToggle';
+      btn.className = 'button';
+      btn.style.marginLeft = '8px';
+      btn.style.background = '#e6f4ff';
+      nav.appendChild(btn);
+      const audio = document.getElementById('ambience');
+      if (audio) audio.volume = 0.35;
+      const stored = localStorage.getItem('ambientOn');
+      let on = stored !== null ? stored === '1' : true; // default ON
+      btn.textContent = 'Ambient: ' + (on ? 'On' : 'Off');
+      (async () => { try { if(on){ await audio.play(); } else { audio.pause(); } } catch(e){} })();
+      const ensurePlay = async () => { if(on && audio && audio.paused){ try{ await audio.play(); }catch(e){} } };
+      document.addEventListener('pointerdown', ensurePlay, { once: true });
+      btn.addEventListener('click', async () => {
+        on = !on;
+        localStorage.setItem('ambientOn', on ? '1' : '0');
+        btn.textContent = 'Ambient: ' + (on ? 'On' : 'Off');
+        try{ if(on){ await audio.play(); } else { audio.pause(); } }catch(e){}
+      });
+    })();
+  </script>
+  <script src="/static/js/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spirit Guide — Ghibli World</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="corner-brand" aria-hidden="true">
+    <img src="/static/images/ghibli.png" alt="" />
+  </div>
+  <header class="site-header small">
+    <div class="wrap">
+      <h1 class="title">Ghibli Spirit Guide</h1>
+  <nav class="nav"><a href="/">Home</a> <a href="/quiz">Quiz</a> <a href="/explorer">Movie Explorer</a></nav>
+    </div>
+  </header>
+  <main class="wrap oracle-wrap">
+    <section class="oracle-hero">
+      <h2>Let the sky pick tonight's tale</h2>
+      <p>Choose a feeling, spin the sky, and the spirits will send you a handpicked lineup with quotes and ambience to match.</p>
+    </section>
+    <section class="card">
+      <h3 style="margin-top:0">Pick your current mood</h3>
+      <div class="mood-grid" id="moodGrid">
+        <button class="mood-chip is-active" data-mood="cozy">Cozy &amp; Comforting</button>
+        <button class="mood-chip" data-mood="adventure">Adventurous</button>
+        <button class="mood-chip" data-mood="whimsical">Whimsical Magic</button>
+        <button class="mood-chip" data-mood="melancholy">Bittersweet Feels</button>
+        <button class="mood-chip" data-mood="uplifting">Hopeful &amp; Uplifting</button>
+      </div>
+      <div class="oracle-action" style="margin-top:18px">
+        <button id="generateSpirit">Spin the Sky</button>
+        <button id="resetSpirit" style="background:var(--accent-2);color:#4a3410">Clear</button>
+      </div>
+    </section>
+    <section class="oracle-suggestion" id="oracleSuggestion">
+      <div class="oracle-empty">Pick a mood and spin the sky to see what the spirits suggest.</div>
+    </section>
+    <section class="card quote-card" id="oracleWhisper" style="display:none">
+      <h3 style="margin-top:0">Spirit Whisper</h3>
+      <blockquote id="oracleQuote"></blockquote>
+      <cite id="oracleSource"></cite>
+    </section>
+  </main>
+  <audio id="ambience" loop>
+    <source src="/static/sounds/forest-breeze.mp3" type="audio/mpeg">
+  </audio>
+  <script>
+    (function(){
+      const nav = document.querySelector('.nav');
+      if(!nav) return;
+      const btn = document.createElement('button');
+      btn.id = 'audioToggle';
+      btn.className = 'button';
+      btn.style.marginLeft = '8px';
+      btn.style.background = '#e6f4ff';
+      nav.appendChild(btn);
+      const audio = document.getElementById('ambience');
+      if (audio) audio.volume = 0.35;
+      const stored = localStorage.getItem('ambientOn');
+      let on = stored !== null ? stored === '1' : true;
+      btn.textContent = 'Ambient: ' + (on ? 'On' : 'Off');
+      (async () => { try { if(on){ await audio.play(); } else { audio.pause(); } } catch(e){} })();
+      const ensurePlay = async () => { if(on && audio && audio.paused){ try{ await audio.play(); }catch(e){} } };
+      document.addEventListener('pointerdown', ensurePlay, { once: true });
+      btn.addEventListener('click', async () => {
+        on = !on;
+        localStorage.setItem('ambientOn', on ? '1' : '0');
+        btn.textContent = 'Ambient: ' + (on ? 'On' : 'Off');
+        try{ if(on){ await audio.play(); } else { audio.pause(); } }catch(e){}
+      });
+    })();
+  </script>
+  <script src="/static/js/oracle.js"></script>
+</body>
+</html>
