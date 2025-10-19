@@ -152,18 +152,8 @@ body::after{
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:rgba(148,183,226,0.2);color:#1f3b53;font-size:12px;font-weight:600;border:1px solid rgba(148,183,226,0.45);backdrop-filter:blur(4px)}
 
-.timeline{display:grid;gap:10px;max-height:260px;overflow:auto;padding-right:6px}
-.timeline-item{display:grid;grid-template-columns:70px 1fr auto;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.72);box-shadow:0 10px 24px rgba(20,30,50,0.06)}
-.timeline-year{font-weight:700;color:#1b2d3a}
-.timeline-title{font-weight:600;color:#354658}
-.timeline-score{font-size:12px;color:#486070;background:rgba(124,197,179,0.18);padding:4px 8px;border-radius:999px}
-
 .quote-card blockquote{margin:0;font-size:18px;line-height:1.6;font-family:'Libre Baskerville', serif;color:#1b2d3a}
 .quote-card cite{display:block;margin-top:12px;color:var(--muted);font-style:normal;font-size:14px}
-
-.timeline-card .timeline{scrollbar-width:thin}
-.timeline-card .timeline::-webkit-scrollbar{width:6px}
-.timeline-card .timeline::-webkit-scrollbar-thumb{background:rgba(31,59,83,0.2);border-radius:999px}
 
 .highlight-card{position:relative}
 .highlight-card::before{content:"";position:absolute;top:-40%;right:-20%;width:180px;height:180px;background:radial-gradient(circle, rgba(148,183,226,0.45) 0%, rgba(148,183,226,0) 70%);z-index:0}
@@ -270,6 +260,49 @@ body::after{
 .oracle-card .chip{background:rgba(124,197,179,0.25);border-color:rgba(124,197,179,0.5)}
 .oracle-empty{text-align:center;padding:40px 24px;border-radius:18px;background:rgba(255,255,255,0.7);box-shadow:0 10px 28px rgba(25,35,55,0.12);font-size:16px;color:#31414f}
 
+.fortune-wrap{display:grid;gap:22px}
+.fortune-instructions h2{margin-top:0}
+.fortune-pillars{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-top:16px}
+.fortune-pillars h3{margin:0 0 6px;font-size:18px;font-family:'Libre Baskerville', serif;color:#1b2d3a}
+.fortune-pillars p{margin:0;color:#31414f;font-size:14px;line-height:1.5}
+.fortune-panel{display:grid;gap:24px;background:rgba(255,255,255,0.85);}
+.fortune-moods h3,.fortune-realms h3{margin:0 0 10px;font-size:20px;font-family:'Libre Baskerville', serif;color:#1b2d3a}
+.fortune-chip-grid{display:flex;flex-wrap:wrap;gap:10px}
+.fortune-chip{cursor:pointer;padding:10px 16px;border-radius:999px;border:1px solid rgba(124,197,179,0.45);background:rgba(124,197,179,0.18);color:#124536;font-weight:600;transition:transform .18s ease, box-shadow .18s ease, background .18s ease}
+.fortune-chip:hover{transform:translateY(-2px);box-shadow:0 10px 18px rgba(20,30,50,0.12)}
+.fortune-chip.is-active{background:rgba(124,197,179,0.3);border-color:rgba(124,197,179,0.75);box-shadow:0 12px 22px rgba(20,30,50,0.18)}
+.fortune-realms-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.fortune-realm-card{padding:16px;border-radius:18px;border:1px solid rgba(148,183,226,0.45);background:rgba(148,183,226,0.18);text-align:left;color:#1f2d38;font-family:'Quicksand', sans-serif;cursor:pointer;transition:transform .2s ease, box-shadow .2s ease, border .2s ease}
+.fortune-realm-card h4{margin:0 0 6px;font-size:18px;font-family:'Libre Baskerville', serif;color:#1b2d3a}
+.fortune-realm-card p{margin:0;color:#31414f;font-size:14px;line-height:1.5}
+.fortune-realm-card:hover{transform:translateY(-3px);box-shadow:0 14px 24px rgba(20,30,50,0.14)}
+.fortune-realm-card.is-active{border-color:rgba(124,197,179,0.85);background:rgba(124,197,179,0.3);box-shadow:0 16px 28px rgba(20,30,50,0.18)}
+.fortune-actions{display:flex;gap:12px;flex-wrap:wrap}
+.fortune-actions .button{flex:1 1 180px;text-align:center}
+.fortune-result{min-height:220px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;transition:box-shadow .4s ease, transform .4s ease;--fortune-aura:rgba(148,183,226,0.28)}
+.fortune-result::before{content:"";position:absolute;inset:18px;border-radius:24px;background:radial-gradient(circle at 30% 30%, var(--fortune-aura), rgba(255,255,255,0));opacity:0;transition:opacity .6s ease;z-index:0}
+.fortune-result.is-lit{box-shadow:0 24px 44px rgba(18,36,58,0.22);transform:translateY(-2px)}
+.fortune-result.is-lit::before{opacity:1}
+.fortune-placeholder{color:var(--muted);font-size:16px;text-align:center;position:relative;z-index:1}
+.fortune-output{display:flex;gap:24px;align-items:center;flex-wrap:wrap;position:relative;z-index:1}
+.fortune-lantern{width:140px;height:180px;border-radius:64px 64px 40px 40px;background:linear-gradient(180deg, rgba(244,212,140,0.85), rgba(244,212,140,0.6));box-shadow:0 20px 40px rgba(244,212,140,0.35);position:relative;overflow:hidden;animation:lanternFloat 5s ease-in-out infinite;flex:0 0 auto}
+.fortune-result.is-lit .fortune-lantern{animation-play-state:running}
+.fortune-flame{position:absolute;inset:24px 38px;border-radius:50%;background:radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,200,120,0.85) 55%, rgba(255,200,120,0) 80%);opacity:0;transform:scale(0.8);transition:opacity .6s ease, transform .6s ease}
+.fortune-result.is-lit .fortune-flame{opacity:1;transform:scale(1)}
+.fortune-text{flex:1;min-width:220px}
+.fortune-text h3{margin:0;font-size:24px;font-family:'Libre Baskerville', serif;color:#1b2d3a}
+.fortune-blessing{margin:12px 0 0;font-size:16px;color:#31414f;line-height:1.6}
+.fortune-secondary{margin:10px 0 0;font-size:15px;color:#44596a;line-height:1.6}
+.fortune-film{margin:16px 0 0;font-size:17px;font-weight:700;color:#1f2d38}
+.fortune-ritual{margin-top:12px;padding:12px 16px;border-radius:14px;background:rgba(148,183,226,0.22);color:#1f2d38;box-shadow:0 12px 24px rgba(20,30,50,0.12)}
+.fortune-ritual span{display:block;font-size:12px;text-transform:uppercase;letter-spacing:1.8px;color:#597085;margin-bottom:6px}
+
+@keyframes lanternFloat{
+  0%{transform:translateY(0)}
+  50%{transform:translateY(-6px)}
+  100%{transform:translateY(0)}
+}
+
 /* Hero banner styling */
 .hero-banner{
   position:relative;
@@ -340,12 +373,14 @@ footer.site-footer{padding:18px 0;text-align:center;color:var(--muted)}
   .highlight{flex-direction:column;align-items:center;text-align:center}
   .highlight-image{width:120px;height:170px}
   .journey-grid{grid-template-columns:1fr}
-  .timeline{max-height:none}
   .card{padding:18px}
   .nav{flex-direction:column;align-items:stretch;gap:8px}
   .nav a,
   .nav button{display:block;width:100%;text-align:center}
   .nav button{margin-left:0 !important}
+  .fortune-output{flex-direction:column;align-items:center;text-align:center}
+  .fortune-actions .button{flex:1 1 auto}
+  .fortune-realm-card{text-align:center}
 }
 
 @media (max-width:540px) {

@@ -97,6 +97,26 @@ QUIZ_ARCHETYPES: Dict[str, Dict[str, Any]] = {
             "The Boy and the Heron",
         ],
     },
+    "playful": {
+        "name": "Tide Dancer",
+        "film": "Ponyo",
+        "quote": "I am going to be human!",
+        "recommended": [
+            "Ponyo",
+            "The Cat Returns",
+            "My Neighbor Totoro",
+        ],
+    },
+    "wise": {
+        "name": "Skywright Dreamer",
+        "film": "The Wind Rises",
+        "quote": "The wind is rising! We must try to live.",
+        "recommended": [
+            "The Wind Rises",
+            "From Up on Poppy Hill",
+            "Only Yesterday",
+        ],
+    },
 }
 
 FALLBACK_FILMS: List[Dict[str, Any]] = [
@@ -150,17 +170,6 @@ async def build_world_snapshot() -> Dict[str, Any]:
     newest = max(films, key=year_value, default=None)
     oldest = min([f for f in films if year_value(f) != 0], key=year_value, default=None)
 
-    timeline = [
-        {
-            "title": f.get("title"),
-            "year": year_value(f),
-            "rt_score": _to_int(f.get("rt_score")),
-        }
-        for f in films
-        if year_value(f)
-    ]
-    timeline.sort(key=lambda item: item["year"])
-
     avg_score = None
     rt_values = [rt_score(f) for f in films if rt_score(f) >= 0]
     if rt_values:
@@ -168,8 +177,9 @@ async def build_world_snapshot() -> Dict[str, Any]:
 
     runtime_values = [_to_int(f.get("running_time")) for f in films]
     total_runtime = sum(rv for rv in runtime_values if rv is not None)
-    first_year = timeline[0]["year"] if timeline else None
-    latest_year = timeline[-1]["year"] if timeline else None
+    years = sorted([year_value(f) for f in films if year_value(f)])
+    first_year = years[0] if years else None
+    latest_year = years[-1] if years else None
 
     return {
         "counts": {
@@ -178,7 +188,6 @@ async def build_world_snapshot() -> Dict[str, Any]:
         "topRated": top_rated,
         "newest": newest,
         "oldest": oldest,
-        "timeline": timeline,
         "averageRtScore": avg_score,
         "totalRuntimeMinutes": total_runtime,
         "firstYear": first_year,
@@ -376,24 +385,18 @@ async def proxy_image(url: str):
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
-
-
 @app.get("/quiz", response_class=HTMLResponse)
 async def quiz_page(request: Request):
     return templates.TemplateResponse("quiz.html", {"request": request})
-
-
-
 @app.get("/explorer", response_class=HTMLResponse)
 async def explorer_page(request: Request):
     return templates.TemplateResponse("explorer.html", {"request": request})
-
-
 @app.get("/oracle", response_class=HTMLResponse)
 async def oracle_page(request: Request):
     return templates.TemplateResponse("oracle.html", {"request": request})
-
-
+@app.get("/fortune", response_class=HTMLResponse)
+async def fortune_page(request: Request):
+    return templates.TemplateResponse("fortune.html", {"request": request})
 @app.get("/api/movies")
 async def api_movies():
     films = await fetch_ghibli_films()

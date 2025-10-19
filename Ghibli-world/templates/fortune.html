@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Spirit Guide — Ghibli World</title>
+  <title>Fortune Lanterns — Ghibli World</title>
   <link rel="stylesheet" href="/static/css/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
 </head>
@@ -13,38 +13,56 @@
   </div>
   <header class="site-header small">
     <div class="wrap">
-      <h1 class="title">Ghibli Spirit Guide</h1>
-  <nav class="nav"><a href="/">Home</a> <a href="/quiz">Quiz</a> <a href="/fortune">Fortune Lanterns</a> <a href="/explorer">Movie Explorer</a></nav>
+      <h1 class="title">Fortune Lanterns</h1>
+      <p class="subtitle">Light a lantern, let a spirit answer.</p>
+  <nav class="nav"><a href="/">Home</a> <a href="/quiz">Quiz</a> <a href="/fortune">Fortune Lanterns</a> <a href="/explorer">Movie Explorer</a> <a href="/oracle">Spirit Guide</a></nav>
     </div>
   </header>
-  <main class="wrap oracle-wrap">
-    <section class="oracle-hero">
-      <h2>Let the sky pick tonight's tale</h2>
-      <p>Choose a feeling, spin the sky, and the spirits will send you a handpicked lineup with quotes and ambience to match.</p>
-    </section>
-    <section class="card">
-      <h3 style="margin-top:0">Pick your current mood</h3>
-      <div class="mood-grid" id="moodGrid">
-        <button class="mood-chip is-active" data-mood="cozy">Cozy &amp; Comforting</button>
-        <button class="mood-chip" data-mood="adventure">Adventurous</button>
-        <button class="mood-chip" data-mood="whimsical">Whimsical Magic</button>
-        <button class="mood-chip" data-mood="melancholy">Bittersweet Feels</button>
-        <button class="mood-chip" data-mood="uplifting">Hopeful &amp; Uplifting</button>
+
+  <main class="wrap fortune-wrap">
+    <section class="card fortune-instructions">
+      <h2>How it works</h2>
+      <p>Pick the mood you want to invite and the realm you wish to wander. The lantern spirits will weave a tiny fortune drawn from Studio Ghibli’s worlds.</p>
+      <div class="fortune-pillars">
+        <div>
+          <h3>1. Invite a mood</h3>
+          <p>Choose up to two feelings. Each mood adds a different shimmer to your lantern.</p>
+        </div>
+        <div>
+          <h3>2. Pick a realm</h3>
+          <p>Select the kind of scene you’d love to step into tonight.</p>
+        </div>
+        <div>
+          <h3>3. Light the lantern</h3>
+          <p>Watch your fortune unfold, complete with a film prompt and a gentle ritual.</p>
+        </div>
       </div>
-      <div class="oracle-action" style="margin-top:18px">
-        <button id="generateSpirit">Spin the Sky</button>
-        <button id="resetSpirit" style="background:var(--accent-2);color:#4a3410">Clear</button>
+    </section>
+
+    <section class="card fortune-panel">
+      <div class="fortune-moods">
+        <h3>Invite a mood</h3>
+        <div class="fortune-chip-grid" id="moodChips">
+        </div>
+      </div>
+      <div class="fortune-realms">
+        <h3>Choose a realm</h3>
+        <div class="fortune-realms-grid" id="realmGrid">
+        </div>
+      </div>
+      <div class="fortune-actions">
+        <button class="button" id="lightBtn">Light the lantern</button>
+        <button class="button button-ghost" id="clearBtn">Reset</button>
       </div>
     </section>
-    <section class="oracle-suggestion" id="oracleSuggestion">
-      <div class="oracle-empty">Pick a mood and spin the sky to see what the spirits suggest.</div>
-    </section>
-    <section class="card quote-card" id="oracleWhisper" style="display:none">
-      <h3 style="margin-top:0">Spirit Whisper</h3>
-      <blockquote id="oracleQuote"></blockquote>
-      <cite id="oracleSource"></cite>
+
+    <section class="card fortune-result" id="fortuneResult" aria-live="polite">
+      <div class="fortune-placeholder">
+        <p>Light a lantern to receive your fortune.</p>
+      </div>
     </section>
   </main>
+
   <audio id="ambience" loop>
     <source src="/static/sounds/forest-breeze.mp3" type="audio/mpeg">
   </audio>
@@ -74,6 +92,6 @@
       });
     })();
   </script>
-  <script src="/static/js/oracle.js"></script>
+  <script src="/static/js/fortune.js?v=2"></script>
 </body>
 </html>

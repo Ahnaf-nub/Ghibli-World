@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Ghibli World - ジブリの世界</title>
+  <title>Ghibli World</title>
   <link rel="stylesheet" href="/static/css/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
 </head>
@@ -20,7 +20,8 @@
   <h1 class="title">Ghibli World <span class="subtitle-jp">ジブリの世界</span></h1>
   <p class="subtitle">Find your spirit, explore the films.</p>
       <nav class="nav">
-  <a href="/quiz">Take the Personality Quiz</a>
+  <a href="/quiz">Take the Quiz</a>
+  <a href="/fortune">Fortune Lanterns</a>
   <a href="/oracle">Spirit Guide</a>
   <a href="/explorer">Movie Explorer</a>
       </nav>
@@ -39,7 +40,7 @@
       </div>
       <div class="hero-overlay">
         <p class="hero-eyebrow" id="heroEyebrow">Sky feature</p>
-  <h2 id="heroTitle">Ghibli World - ジブリの世界</h2>
+  <h2 id="heroTitle">Ghibli World</h2>
         <p id="heroMeta" class="hero-meta"></p>
         <p id="heroDesc" class="hero-desc"></p>
         <div class="hero-actions">
@@ -50,7 +51,7 @@
     </section>
     <section class="card intro">
   <h2>Welcome</h2>
-  <p>Pick a path — discover which Ghibli character you are, or browse films.</p>
+  <p>Pick a path — discover which Ghibli character you are, or browse films with cozy details and gifs.</p>
       <a class="button" href="/quiz">I'm curious →</a>
     </section>
 
@@ -60,14 +61,6 @@
         <div class="stat">
           <span class="stat-label">Films catalogued</span>
           <span class="stat-value" data-stat="films">–</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Sky score</span>
-          <span class="stat-value" data-stat="score">–</span>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Total runtime</span>
-          <span class="stat-value" data-stat="runtime">–</span>
         </div>
         <div class="stat">
           <span class="stat-label">First release</span>
@@ -109,11 +102,6 @@
       </div>
     </section>
 
-    <section class="card timeline-card">
-  <h3>Release Timeline</h3>
-      <div class="timeline" id="timeline"></div>
-    </section>
-
     <section class="card quote-card">
   <h3>Today's Whisper</h3>
       <blockquote id="whisperQuote">Let the wind bring a quote…</blockquote>
@@ -136,26 +124,57 @@
         const res = await fetch('/api/movies');
         const films = await res.json();
         if(Array.isArray(films) && films.length){
-          const today = new Date().toISOString().slice(0,10);
+          const now = Date.now();
+          const ttlMs = 1000 * 60 * 60 * 3; // refresh every ~3 hours
+          const makeKey = film => {
+            if(!film || typeof film !== 'object') return null;
+            const rawId = film.id && String(film.id).trim().toLowerCase();
+            if(rawId) return rawId;
+            const rawTitle = film.title && String(film.title).trim().toLowerCase();
+            return rawTitle || null;
+          };
           let storedPick = null;
           try{
             storedPick = JSON.parse(localStorage.getItem('skyPick') || 'null');
           }catch(e){ storedPick = null; }
           let pick = null;
-          if(storedPick && storedPick.date === today){
-            pick = films.find(f => {
-              const key = (f.id && String(f.id).trim().toLowerCase()) || (f.title && String(f.title).trim().toLowerCase());
-              return key && key === storedPick.key;
-            }) || null;
+          const storedKey = storedPick && typeof storedPick.key === 'string' ? storedPick.key : null;
+          let storedAt = storedPick && typeof storedPick.timestamp === 'number' ? storedPick.timestamp : null;
+          if(!storedAt && storedPick && typeof storedPick.date === 'string'){
+            const parsed = Date.parse(storedPick.date);
+            if(!Number.isNaN(parsed)) storedAt = parsed;
+          }
+          if(storedKey && storedAt && (now - storedAt) < ttlMs){
+            pick = films.find(f => makeKey(f) === storedKey) || null;
           }
           if(!pick){
-            pick = films[Math.floor(Math.random()*films.length)];
-            const key = (pick.id && String(pick.id).trim().toLowerCase()) || (pick.title && String(pick.title).trim().toLowerCase()) || null;
-            if(key){
-              try{
-                localStorage.setItem('skyPick', JSON.stringify({date: today, key}));
-              }catch(e){}
+            const excludeKey = storedKey;
+            const candidates = films.filter(f => {
+              const key = makeKey(f);
+              return !key || key !== excludeKey;
+            });
+            const source = candidates.length ? candidates : films;
+            if(source.length){
+              pick = source[Math.floor(Math.random() * source.length)];
+              const key = makeKey(pick);
+              if(key){
+                try{
+                  localStorage.setItem('skyPick', JSON.stringify({ key, timestamp: now }));
+                }catch(e){}
+              }
             }
+          }else{
+            if(!storedAt){
+              const key = makeKey(pick);
+              if(key){
+                try{
+                  localStorage.setItem('skyPick', JSON.stringify({ key, timestamp: now }));
+                }catch(e){}
+              }
+            }
+          }
+          if(!pick){
+            pick = films[0];
           }
           const heroImg = document.getElementById('heroImg');
           const heroTitle = document.getElementById('heroTitle');
@@ -221,34 +240,16 @@
         const world = await res.json();
         if(!world) return;
 
-        const formatRuntime = minutes => {
-          if(typeof minutes !== 'number' || Number.isNaN(minutes) || minutes <= 0) return '–';
-          const hours = Math.floor(minutes / 60);
-          const mins = minutes % 60;
-          if(hours && mins) return `${hours}h ${mins}m`;
-          if(hours) return `${hours}h`;
-          return `${mins}m`;
-        };
-
         const statValues = {
           films: world.counts?.films,
-          score: world.averageRtScore,
-          runtime: world.totalRuntimeMinutes,
           first: world.firstYear,
           latest: world.latestYear,
         };
 
         document.querySelectorAll('[data-stat]').forEach(el => {
           const key = el.getAttribute('data-stat');
-          let value = statValues[key];
-          if(key === 'runtime' && typeof value === 'number'){
-            value = formatRuntime(value);
-          }
-          if(key === 'score' && value){
-            el.textContent = `${value}`;
-          }else{
-            el.textContent = value ?? '–';
-          }
+          const value = statValues[key];
+          el.textContent = value ?? '–';
         });
 
         const statNote = document.getElementById('statNote');
@@ -296,15 +297,6 @@
         if(oldestMeta){
           const parts = [oldest?.year, oldest?.director].filter(Boolean);
           oldestMeta.textContent = parts.length ? parts.join(' • ') : '';
-        }
-
-        const timeline = Array.isArray(world.timeline) ? world.timeline : [];
-        const timelineWrap = document.getElementById('timeline');
-        if(timelineWrap){
-          timelineWrap.innerHTML = timeline.map(item => {
-            const score = item.rt_score ?? '–';
-            return `<div class="timeline-item"><span class="timeline-year">${item.year}</span><span class="timeline-title">${item.title}</span><span class="timeline-score">RT ${score}</span></div>`;
-          }).join('');
         }
 
         const quotes = Array.isArray(world.quotes) ? world.quotes : [];
